@@ -24,6 +24,11 @@ class top_block(grc_wxgui.top_block_gui):
             pkt = self.sink_queue.delete_head().to_string()
 
         return pkt
+    
+    def packet_as_ints(self):
+        pkt=self.recv_pkt()
+        myInts=list(str(pkt))
+        return myInts
         
     def __init__(self):
         grc_wxgui.top_block_gui.__init__(self, title="Top Block")
@@ -99,6 +104,6 @@ if __name__ == '__main__':
     tb = top_block()
     tb.Start(True)
     while True:
-        print (tb.recv_pkt())
+        print tb.packet_as_ints()
         sleep(1)
 
