@@ -69,7 +69,7 @@ class top_block(grc_wxgui.top_block_gui):
           
         self.sink_queue = gr.msg_queue()  
           
-        self.blocks_threshold_ff_0 = blocks.threshold_ff(0, 0.1, 0)
+        self.blocks_threshold_ff_0 = blocks.threshold_ff(0, 0.06, 0)
         #self.blocks_threshold_ff_0 = blocks.peak_detector_fb(self.threshold_factor_rise)
         self.blocks_message_sink_0 = blocks.message_sink(gr.sizeof_char*1, self.sink_queue, True)
         self.blocks_float_to_uchar_0 = blocks.float_to_uchar()
