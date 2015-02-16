@@ -14,7 +14,8 @@ from grc_gnuradio import wxgui as grc_wxgui
 from optparse import OptionParser
 import osmosdr
 import wx
-from time import sleep
+import time
+from pushbullet import Pushbullet
 
 class top_block(grc_wxgui.top_block_gui):
     def recv_pkt(self):
@@ -22,13 +23,19 @@ class top_block(grc_wxgui.top_block_gui):
 
         if self.sink_queue.count():
             pkt = self.sink_queue.delete_head().to_string()
-
+        
+        #print self.sink_queue.count()
+        
         return pkt
     
     def packet_as_ints(self):
-        pkt=self.recv_pkt()
-        myInts=list(str(pkt))
+        myInts = [x for x in bytearray(self.recv_pkt())]
         return myInts
+    
+    def packetsAboveZero(self):
+        ints=self.packet_as_ints()
+        #print ints
+        return sum(ints)
         
     def __init__(self):
         grc_wxgui.top_block_gui.__init__(self, title="Top Block")
@@ -40,6 +47,9 @@ class top_block(grc_wxgui.top_block_gui):
         ##################################################
         self.samp_rate = samp_rate = 96e3
         self.frequency = frequency = 433.967e6
+
+        self.threshold_factor_rise = 1
+        self.threshold_factor_fall = 1
 
         ##################################################
         # Blocks
@@ -59,7 +69,8 @@ class top_block(grc_wxgui.top_block_gui):
           
         self.sink_queue = gr.msg_queue()  
           
-        self.blocks_threshold_ff_0 = blocks.threshold_ff(-30, -1, 0)
+        self.blocks_threshold_ff_0 = blocks.threshold_ff(0, 0.1, 0)
+        #self.blocks_threshold_ff_0 = blocks.peak_detector_fb(self.threshold_factor_rise)
         self.blocks_message_sink_0 = blocks.message_sink(gr.sizeof_char*1, self.sink_queue, True)
         self.blocks_float_to_uchar_0 = blocks.float_to_uchar()
         self.blocks_complex_to_real_0 = blocks.complex_to_real(1)
@@ -72,6 +83,7 @@ class top_block(grc_wxgui.top_block_gui):
         self.connect((self.blocks_complex_to_real_0, 0), (self.blocks_threshold_ff_0, 0))
         self.connect((self.blocks_threshold_ff_0, 0), (self.blocks_float_to_uchar_0, 0))
         self.connect((self.blocks_float_to_uchar_0, 0), (self.blocks_message_sink_0, 0))
+        #self.connect((self.blocks_threshold_ff_0, 0), (self.blocks_message_sink_0, 0))
 
 
 # QT sink close method reimplementation
@@ -90,9 +102,18 @@ class top_block(grc_wxgui.top_block_gui):
         self.frequency = frequency
         self.rtlsdr_source_0.set_center_freq(self.frequency, 0)
 
+
+def dingdong():
+    print "dingDong"
+    pb.push_note("Door Bell","Ding Dong!")
+    
+
 if __name__ == '__main__':
     import ctypes
     import os
+    api_key='IQCoV2PuDYmXSiKbUxv9dIFQYwVeKBUQ'
+    pb = Pushbullet(api_key)
+    
     if os.name == 'posix':
         try:
             x11 = ctypes.cdll.LoadLibrary('libX11.so')
@@ -103,7 +124,15 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
     tb = top_block()
     tb.Start(True)
+    
+    lastTime=0
+    
     while True:
-        print tb.packet_as_ints()
-        sleep(1)
+        if tb.packetsAboveZero() > 0:
+            timeNow=time.time()
+            if (timeNow - lastTime) > 5:
+                dingdong()
+                lastTime=timeNow
+            
+        #sleep(0.1)
 

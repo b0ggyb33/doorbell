@@ -15,6 +15,7 @@ from optparse import OptionParser
 import osmosdr
 import wx
 from time import sleep
+import struct
 
 class top_block(grc_wxgui.top_block_gui):
 
@@ -26,6 +27,11 @@ class top_block(grc_wxgui.top_block_gui):
 
         return pkt
 
+    def packet_as_floats(self):
+        myFloats = [x for x in bytearray(self.recv_pkt(),'f')]
+        #print len(myInts)
+        return myFloats
+        
     def __init__(self):
         grc_wxgui.top_block_gui.__init__(self, title="Top Block")
         _icon_path = "/usr/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
@@ -98,7 +104,7 @@ if __name__ == '__main__':
     tb = top_block()
     tb.Start(True)
     while True:
-        print float(tb.recv_pkt())
+        print tb.packet_as_floats()
         sleep(1)
     
 
